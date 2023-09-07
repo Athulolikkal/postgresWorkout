@@ -4,7 +4,7 @@ import morgan from "morgan"
 import axios from "axios"
 const app = express()
 
-app.use(express.json()); 
+app.use(express.json());
 app.use(cors())
 app.use(morgan("dev"))
 app.use(urlencoded({ extended: false }))
@@ -42,49 +42,49 @@ app.post('/adduser', async (req, res) => {
         });
 
         if (response.data.errors) {
-            res.status(400).json({ err: 'Email is already in use' }); 
+            res.status(400).json({ err: 'Email is already in use' });
         } else {
-            res.status(200).json(response.data); 
+            res.status(200).json(response.data);
         }
     } catch (err) {
         console.error("Error on adduser:", err);
-        res.status(500).json({ err: 'Server error' }); 
+        res.status(500).json({ err: 'Server error' });
     }
 });
 
 
 
-app.get('/users',async(req,res)=>{
-    try{
-     const response= await axios.post(hasuraEndPoint,{
-        query: `
+app.get('/users', async (req, res) => {
+    try {
+        const response = await axios.post(hasuraEndPoint, {
+            query: `
         query{
             registreduser{
                 id,name,email
             }
         }
         `},
-        {
-            headers:{
-                "x-hasura-admin-secret": hasuraSecretKey
+            {
+                headers: {
+                    "x-hasura-admin-secret": hasuraSecretKey
+                }
             }
-        }
         )
         // console.log(response?.data?.data);
         res.json(response?.data?.data?.registreduser)
-    }catch(err){
+    } catch (err) {
 
     }
 })
 
 app.post('/isValidUser', async (req, res) => {
     try {
-      const { email, password } = req?.body;
-      console.log(email,password)
-      const response = await axios.post(
-        hasuraEndPoint,
-        {
-          query: `
+        const { email, password } = req?.body;
+        console.log(email, password)
+        const response = await axios.post(
+            hasuraEndPoint,
+            {
+                query: `
             query GetUser($email: bpchar!) {
                 registreduser(where: { email: { _eq: $email } }) {
                 id,
@@ -94,30 +94,60 @@ app.post('/isValidUser', async (req, res) => {
               }
             }
           `,
-          variables: {
-            email,
-          },
-        },
-        {
-          headers: {
-            "x-hasura-admin-secret": hasuraSecretKey,
-          },
+                variables: {
+                    email,
+                },
+            },
+            {
+                headers: {
+                    "x-hasura-admin-secret": hasuraSecretKey,
+                },
+            }
+        );
+        console.log(response?.data?.errors)
+        const userData = response?.data?.data?.registreduser[0]
+        console.log(userData);
+        if (!userData) {
+            res.json({ status: false })
+        } else {
+            const isValid = userData?.password === password
+            res.json({ status: isValid ? true : false })
         }
-      );
-      console.log(response?.data?.errors)
-     const userData= response?.data?.data?.registreduser[0]
-     console.log(userData);
-     if(!userData){
-        res.json({status:false})
-     }else{
-       const isValid= userData?.password===password
-       res.json({status:isValid?true:false})
-     }
     } catch (err) {
-      console.log(err);
+        console.log(err);
     }
-  });
-  
+});
+
+app.delete('/delete', async (req, res) => {
+    try {
+        const { id } = req?.query
+        const response = await axios.post(
+            hasuraEndPoint,
+            {
+              query: `
+                mutation DeleteUser($id: uuid!) {
+                  delete_registreduser(where: { id: { _eq: $id } }) {
+                    affected_rows
+                  }
+                }
+              `,
+              variables: {
+                id,
+              },
+            },
+            {
+              headers: {
+                "x-hasura-admin-secret": hasuraSecretKey,
+              },
+            }
+          );
+          console.log(response?.data);
+          
+    } catch (err) {
+        console.log(err)
+    }
+})
+
 
 app.listen(5000, () => {
     console.log("server running in port 5000")
