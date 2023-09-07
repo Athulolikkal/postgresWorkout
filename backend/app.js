@@ -54,13 +54,13 @@ app.post('/adduser', async (req, res) => {
 
 
 
-app.get('/',async(req,res)=>{
+app.get('/users',async(req,res)=>{
     try{
      const response= await axios.post(hasuraEndPoint,{
         query: `
         query{
-            users{
-                id,name,age
+            registreduser{
+                id,name,email
             }
         }
         `},
@@ -70,12 +70,54 @@ app.get('/',async(req,res)=>{
             }
         }
         )
-        console.log(response?.data?.data?.users);
-        res.json(response?.data?.data?.users)
+        // console.log(response?.data?.data);
+        res.json(response?.data?.data?.registreduser)
     }catch(err){
 
     }
 })
+
+app.post('/isValidUser', async (req, res) => {
+    try {
+      const { email, password } = req?.body;
+      console.log(email,password)
+      const response = await axios.post(
+        hasuraEndPoint,
+        {
+          query: `
+            query GetUser($email: bpchar!) {
+                registreduser(where: { email: { _eq: $email } }) {
+                id,
+                name,
+                email,
+                password
+              }
+            }
+          `,
+          variables: {
+            email,
+          },
+        },
+        {
+          headers: {
+            "x-hasura-admin-secret": hasuraSecretKey,
+          },
+        }
+      );
+      console.log(response?.data?.errors)
+     const userData= response?.data?.data?.registreduser[0]
+     console.log(userData);
+     if(!userData){
+        res.json({status:false})
+     }else{
+       const isValid= userData?.password===password
+       res.json({status:isValid?true:false})
+     }
+    } catch (err) {
+      console.log(err);
+    }
+  });
+  
 
 app.listen(5000, () => {
     console.log("server running in port 5000")
