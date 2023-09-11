@@ -1,4 +1,4 @@
-import express, { application, response, urlencoded } from "express"
+    import express, { application, response, urlencoded } from "express"
 import cors from "cors"
 import morgan from "morgan"
 import axios from "axios"
@@ -70,7 +70,7 @@ app.get('/users', async (req, res) => {
                 }
             }
         )
-        // console.log(response?.data?.data);
+       
         res.json(response?.data?.data?.registreduser)
     } catch (err) {
 
@@ -118,32 +118,104 @@ app.post('/isValidUser', async (req, res) => {
     }
 });
 
-app.delete('/delete', async (req, res) => {
+app.delete('/users/:id', async (req, res) => {
     try {
-        const { id } = req?.query
-        const response = await axios.post(
-            hasuraEndPoint,
-            {
-              query: `
-                mutation DeleteUser($id: uuid!) {
-                  delete_registreduser(where: { id: { _eq: $id } }) {
-                    affected_rows
-                  }
-                }
-              `,
-              variables: {
-                id,
-              },
-            },
-            {
-              headers: {
-                "x-hasura-admin-secret": hasuraSecretKey,
-              },
+      const { id } = req.params;
+      const response = await axios.post(hasuraEndPoint, {
+        query: `
+          mutation($id: uuid!) {
+            delete_registreduser(where: { id: { _eq: $id } }) {
+              affected_rows
+              returning {
+                id
+              }
             }
-          );
-          console.log(response?.data);
-          
+          }
+        `,
+        variables: {
+          id
+        },
+      }, {
+        headers: {
+          "x-hasura-admin-secret": hasuraSecretKey,
+        },
+      });
+  
+      console.log(response?.data);
+  
+      if (response?.data?.errors) {
+        console.log(response.data.errors);
+        // Handle errors here if needed
+        res.status(500).json({ status: false, error: "Error deleting user" });
+      } else {
+       
+        res.json({ status: true });
+      }
     } catch (err) {
+      console.error(err);
+      res.status(500).json({ status: false, error: "Internal Server Error" });
+    }
+  });
+  
+  
+
+app.get('/user',async(req,res)=>{
+    try{
+        const { id } = req?.query;
+        console.log(id)
+        const response = await axios.post(hasuraEndPoint, {
+            query: `
+        query($id:uuid!){
+            registreduser(where: { id: { _eq: $id } }) {
+                id,name,email
+            }
+        }
+        `, variables: {
+            id
+          },},
+            {
+                headers: {
+                    "x-hasura-admin-secret": hasuraSecretKey
+                }
+            }
+        )
+       
+        res.json(response?.data?.data?.registreduser[0])
+
+    }catch(err){
+        console.log(err)
+    }
+})
+
+
+app.put('/user',async(req,res)=>{
+    try{
+const {name,email,id}=req?.body
+ 
+const response = await axios.post(hasuraEndPoint, {
+    query: `
+      mutation($id: uuid!,$name:bpchar!,$email:bpchar!) {
+        update_registreduser(
+            where: { id: { _eq: $id } }
+            _set: { name: $name, email: $email }
+          ){
+          affected_rows
+          returning {
+            id
+          }
+        }
+      }
+    `,
+    variables: {
+      id,email,name
+    },
+  }, {
+    headers: {
+      "x-hasura-admin-secret": hasuraSecretKey,
+    },
+  });
+   res.json({status:true})
+    }catch(err){
         console.log(err)
     }
 })
