@@ -9,8 +9,9 @@ app.use(cors())
 app.use(morgan("dev"))
 app.use(urlencoded({ extended: false }))
 
-const hasuraSecretKey = "3kMlyt0K6sia6Z0YVuVfJJjT5zHGNQ3s1a6Lvo4wmmALORAsMffTPXyyWKAuOnFN";
-const hasuraEndPoint = "https://userregisterlogins.hasura.app/v1/graphql"
+const hasuraSecretKey = "admin@centa.org";
+const hasuraEndPoint = "http://graphql-engine:8080/v1/graphql"
+// const hasuraEndPoint = "http://localhost:8080/v1/graphql"
 
 app.post('/adduser', async (req, res) => {
     try {
@@ -221,6 +222,6 @@ const response = await axios.post(hasuraEndPoint, {
 })
 
 
-app.listen(5000, () => {
-    console.log("server running in port 5000")
+app.listen(3000, () => {
+    console.log("server running in port 3000")
 })
